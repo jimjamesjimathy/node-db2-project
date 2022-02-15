@@ -1,23 +1,49 @@
-const express = require('express');
-const Car = require('./cars-model');
+// DO YOUR MAGIC
+const router = require("express").Router();
 
-const router = express.Router();
+const {
+  checkCarId,
+  checkCarPayload,
+  checkVinNumberValid,
+  checkVinNumberUnique,
+} = require("./cars-middleware");
 
-router.get('/', async (req, res, next) => {
-    try {
-        const cars = await Car.getAll();
-        res.json(cars);
-    } catch(err) {
-        next(err);
+const Cars = require("./cars-model");
+
+router.get("/", async (req, res, next) => {
+  try {
+    const car = await Cars.getAll();
+    res.json(car);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id", checkCarId, (req, res) => {
+  res.status(200).json(req.cars);
+});
+
+router.post(
+    "/",
+    checkCarPayload,
+    checkVinNumberValid,
+    checkVinNumberUnique,
+    async (req, res, next) => {
+      try {
+        const car = await Cars.create(req.body);
+        res.json(car);
+      } catch (error) {
+        next(error);
+      }
     }
-});
-
-router.get('/:id', async (req, res, next) => {
-    res.json(`getting car with ID of ${req.params.id}`);
-});
-
-router.post('/', async (req, res, next) => {
-    res.json('posting a car');
-});
-
-module.exports = router;
+  );
+  
+  router.use((err, req, res, next) => { //eslint-disable-line
+    // eslint-disable-line
+    res.status(err.status || 500).json({
+      message: err.message,
+      stack: err.stack,
+    });
+  });
+  
+  module.exports = router;
